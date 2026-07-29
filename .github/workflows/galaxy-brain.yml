@@ -45,6 +45,7 @@ jobs:
                 -f title="Shadow question $number" \
                 -f body='In this achievement sandbox, what is sufficient?' \
                 -f query='mutation($repositoryId:ID!,$categoryId:ID!,$title:String!,$body:String!){createDiscussion(input:{repositoryId:$repositoryId,categoryId:$categoryId,title:$title,body:$body}){discussion{id number url author{login}}}}'
+            done
           elif [[ "$MODE" == "accept" ]]; then
             [[ -n "$COMMENT_ONE" && -n "$COMMENT_TWO" ]]
             for comment_id in "$COMMENT_ONE" "$COMMENT_TWO"; do
