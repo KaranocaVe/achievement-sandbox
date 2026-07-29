@@ -1,0 +1,58 @@
+name: Run Galaxy Brain experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Create questions or accept answers
+        required: true
+        type: choice
+        options:
+          - create
+          - accept
+      comment_one:
+        description: First discussion comment node ID
+        required: false
+        type: string
+      comment_two:
+        description: Second discussion comment node ID
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  discussions: write
+
+jobs:
+  run-experiment:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODE: ${{ inputs.mode }}
+      COMMENT_ONE: ${{ inputs.comment_one }}
+      COMMENT_TWO: ${{ inputs.comment_two }}
+      REPOSITORY_ID: R_kgDOTm1Z0g
+      CATEGORY_ID: DIC_kwDOTm1Z0s4DCNuC
+    steps:
+      - name: Create questions or accept answers
+        shell: bash
+        run: |
+          if [[ "$MODE" == "create" ]]; then
+            for number in 1 2; do
+              gh api graphql \
+                -f repositoryId="$REPOSITORY_ID" \
+                -f categoryId="$CATEGORY_ID" \
+                -f title="Shadow question $number" \
+                -f body='In this achievement sandbox, what is sufficient?' \
+                -f query='mutation($repositoryId:ID!,$categoryId:ID!,$title:String!,$body:String!){createDiscussion(input:{repositoryId:$repositoryId,categoryId:$categoryId,title:$title,body:$body}){discussion{id number url author{login}}}}'
+          elif [[ "$MODE" == "accept" ]]; then
+            [[ -n "$COMMENT_ONE" && -n "$COMMENT_TWO" ]]
+            for comment_id in "$COMMENT_ONE" "$COMMENT_TWO"; do
+              gh api graphql \
+                -f id="$comment_id" \
+                -f query='mutation($id:ID!){markDiscussionCommentAsAnswer(input:{id:$id}){discussion{id number url answer{author{login}}}}}'
+            done
+          else
+            printf 'Unsupported mode: %s\n' "$MODE" >&2
+            exit 1
+          fi
